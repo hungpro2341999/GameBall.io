@@ -19,7 +19,8 @@ public class GetInfor : MonoBehaviour
         transform.position = Camera.main.WorldToScreenPoint(player.transform.position);
         if (player.GetComponent<Enemy>() != null)
         {
-            textVelcocity.text =  "VELOCITY : "+(int)Vector3.Magnitude(player.GetComponent<Enemy>().body.velocity)+ "\n" + " Direct :"+ player.GetComponent<Enemy>().body.velocity.normalized;
+            textVelcocity.text =  "VELOCITY : "+(int)Vector3.Magnitude(player.GetComponent<Enemy>().body.velocity)+ "\n" + " Direct :"+ player.GetComponent<Enemy>().body.velocity.normalized +
+                "\n" + " ForceInteration :" + player.GetComponent<Enemy>().ForceIntertion;
         }
         else
         {

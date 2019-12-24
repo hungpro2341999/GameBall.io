@@ -261,40 +261,40 @@ public class Enemy : MonoBehaviour
         {
 
        
-        
        
-        float ForcePlayer = player.GetComponent<RollBall>().Force;
-        float BoundPlayer = player.GetComponent<RollBall>().Bound;
+       
+        float ForcePlayer = player.GetComponent<Enemy>().Force;
+        float BoundPlayer = player.GetComponent<Enemy>().Bound;
+        Rigidbody body_1 = player.GetComponent<Enemy>().body;
         float ForceBack = ForcePlayer+Force;
-        float Mass = player.GetComponent<RollBall>().Mass;
-        
-        if (ForcePlayer > Force)
+        float ForceIntertion_1 = 0;
+
+        if (ForcePlayer < Force)
         {
             Debug.Log("Force Player");
             ForceIntertion = ForceBack * Bound;
+            ForceIntertion_1 = ForceBack * BoundPlayer;
             Debug.Log(ForceIntertion);
-          
-            body.AddForce(-Direct.normalized *ForceIntertion,ForceModeWhenInteraction);
-            player.GetComponent<RollBall>().GoBack(Mathf.Clamp(ForceIntertion, MinForce, Mathf.Infinity)/3, Direct.normalized);
+            
+            body.AddForce(-DirectMove.normalized * ForceIntertion, ForceModeWhenInteraction);
+            body_1.AddForce(DirectMove * ForceIntertion, ForceModeWhenInteraction);
 
         }
-        else
-        {
-            Debug.Log("Force Enemy");
-            ForceIntertion = ForceBack * Bound;
-            ForceIntertion = Mathf.Clamp(ForceIntertion, MinForce, Mathf.Infinity);
-            body.AddForce(-Direct.normalized *Mathf.Clamp(ForceIntertion,MinForce,MinForce*2), ForceModeWhenInteraction);
-            player.GetComponent<RollBall>().GoBack(Mathf.Clamp(ForceIntertion, MinForce, Mathf.Infinity)/ 5, Direct.normalized);
-            isMoveBack = true;
-        }
        
-               
+ 
              
      
 
 
 
         }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        Debug.Log("Coll");
+        if (collision.gameObject.layer == 10)
+            MoveBack(collision.gameObject);
+    }
 
     public int CountEnemyFoward()
     {
@@ -409,7 +409,7 @@ public class Enemy : MonoBehaviour
                  }
             
 
-            yield return new WaitForSeconds(0);
+          
         }
         Score = new float[direct.Count];
       
@@ -422,9 +422,9 @@ public class Enemy : MonoBehaviour
         int index = getIndexMax(Score);
 
         DirectMove = direct[index];
-        
 
-       
+        yield return new WaitForSeconds(0);
+
 
     }
 
@@ -458,7 +458,7 @@ public class Enemy : MonoBehaviour
 
         if (Target != null)
         {
-            DirectMove = new Vector3(Target.transform.position.x, 0, Target.transform.position.z) - new Vector3(transform.position.x, 0, transform.position.z).normalized;
+            DirectMove = (new Vector3(Target.transform.position.x, 0, Target.transform.position.z) - new Vector3(transform.position.x, 0, transform.position.z)).normalized;
 
         }
 
@@ -468,7 +468,7 @@ public class Enemy : MonoBehaviour
     }
   
     // DDOGE :::::::::::::
-
+   
    
 
     public void DistanceFromLimit()
@@ -536,6 +536,9 @@ public class Enemy : MonoBehaviour
    
     private int ScoreOfDirectx8()
     {
+        string s1 = "";
+        string s2 = "";
+
         int index = 0;
         /*
         for(int i = 0; i < directX8.Length; i++)
@@ -547,6 +550,7 @@ public class Enemy : MonoBehaviour
               
         }
         */
+      
         float[] score = new float[8];
         float[] DistanceToWall = new float[8];
         float[] Time = new float[8];
@@ -556,13 +560,18 @@ public class Enemy : MonoBehaviour
 
         }
 
-        float[] CopyScore;
+      
         float[] ScoreGood = GetArrayMax(score, 4);
         int r = Random.Range(0, 4);
-        Debug.Log(r);
+     
         index =  getIndex(score, ScoreGood[r]);
         
-
+      for(int i = 0; i < score.Length; i++)
+        {
+            s1 += "  " + score[i];
+        }
+       // Debug.Log(s1);
+       // Debug.Log(gameObject.name +" "+ ScoreGood[r] + "  " + index);
        
         return index;
        
@@ -609,6 +618,7 @@ public class Enemy : MonoBehaviour
         if (GetEnemyInRadius(Radius, transform.position, transform.up)!=0)
         {
             Target = GetTargert(Radius);
+            status = Type_Status.ATTACK;
           
         }
        
@@ -840,22 +850,25 @@ public class Enemy : MonoBehaviour
     }
     public  float[] GetArrayMax(float[] Score ,int number)
     {
+        float[] ScoreCopy = new float[8];
+        Score.CopyTo(ScoreCopy, 0);
+
         string s = "";
         string s1 = "";
 
         List<float> Scores = new List<float>();
         List<float> ScoresMax = new List<float>();
-        for (int i=0;i< Score.Length; i++)
+        for (int i=0;i< ScoreCopy.Length; i++)
         {
-            Scores.Add(Score[i]);
-            s += " " + Score[i];
+            Scores.Add(ScoreCopy[i]);
+            s += " " + ScoreCopy[i];
         }
 
         for(int i = 0; i < number; i++)
         {
-            float max = getValueMax(Score);
+            float max = getValueMax(ScoreCopy);
             ScoresMax.Add(max);
-            Score = RemoveArray(max, Score);
+            ScoreCopy = RemoveArray(max, ScoreCopy);
             s1 += " " + max;
         
         }
@@ -866,6 +879,7 @@ public class Enemy : MonoBehaviour
     {
 
     }
+    
 
     public float[] RemoveArray(float value,float[] Score)
     {
@@ -888,12 +902,17 @@ public class Enemy : MonoBehaviour
         {
             if(value == Score[i])
             {
+             //   Debug.Log("Found :" +value +"  "+ i);
+                index = i;
                 return index;
             }
         }
+        Debug.Log("Not Found");
         return 0;
     }
 
+
+    
 }
 
 

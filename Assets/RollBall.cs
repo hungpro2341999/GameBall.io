@@ -529,7 +529,7 @@ void Start()
     {
         if (collision.gameObject.layer == 10)
         {
-            collision.gameObject.GetComponent<Enemy>().MoveBack(gameObject);        
+          //  collision.gameObject.GetComponent<Enemy>().MoveBack(gameObject);        
         }
     }
 

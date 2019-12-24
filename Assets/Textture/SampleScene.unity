@@ -1586,7 +1586,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 5.538e-42, y: -4.79387e-19, z: -1.828652e-39, w: 0}
+  m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 0}
   m_UseBoundingSphereOverride: 0
   m_ShadowRadius: 0
   m_ShadowAngle: 0
@@ -1802,7 +1802,7 @@ MonoBehaviour:
   distanceRay: 3.5
   Brake: 3
   Drag: 2
-  Radius: 10
+  Radius: 20
   MinForce: 50
   MaxVelocity: 50
   isMoveLimit: 0
@@ -1811,8 +1811,8 @@ MonoBehaviour:
   Weight: 3.5
   ForceIntertion: 0
   DirectMove: {x: 0, y: 0, z: 0}
-  maxTime: 2.2
-  minTime: 1.5
+  maxTime: 2.5
+  minTime: 2
   isMoving: 0
   isLoopDirect: 0
   playerRunAway: []
@@ -1959,7 +1959,7 @@ MonoBehaviour:
   MinForce: 100
   MaxVelocity: 100
   isMoveLimit: 0
-  Bound: 1
+  Bound: 3
   MassLimit: 30
   Weight: 3.5
   ForceIntertion: 0
@@ -1997,7 +1997,7 @@ Rigidbody:
   m_Drag: 0
   m_AngularDrag: 1
   m_UseGravity: 1
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 4
   m_CollisionDetection: 0
@@ -2022,7 +2022,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 931181804}
   m_LocalRotation: {x: 0.44197556, y: 0, z: 0, w: 0.8970271}
-  m_LocalPosition: {x: -22.1, y: 5.07, z: 20.6}
+  m_LocalPosition: {x: -6.9, y: 5.07, z: 20.6}
   m_LocalScale: {x: 2, y: 2, z: 2}
   m_Children:
   - {fileID: 560073318}
@@ -2765,7 +2765,7 @@ MonoBehaviour:
   MinForce: 100
   MaxVelocity: 100
   isMoveLimit: 0
-  Bound: 1
+  Bound: 3
   MassLimit: 30
   Weight: 3.5
   ForceIntertion: 0
@@ -2803,7 +2803,7 @@ Rigidbody:
   m_Drag: 0
   m_AngularDrag: 1
   m_UseGravity: 1
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 4
   m_CollisionDetection: 0
@@ -2828,7 +2828,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1391590877}
   m_LocalRotation: {x: 0.44197556, y: 0, z: 0, w: 0.8970271}
-  m_LocalPosition: {x: 19.4, y: 5.07, z: -34.7}
+  m_LocalPosition: {x: 29, y: 5.07, z: -2.9}
   m_LocalScale: {x: 2, y: 2, z: 2}
   m_Children:
   - {fileID: 2046924752}

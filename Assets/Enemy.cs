@@ -3,20 +3,22 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-
+public enum WallCollison { TOP, DOWN, LEFT, RIGHT }
+public enum Type_Status { ATTACK, DODGE, MOVE, RUN_AWAY }
+public enum Type_AI { BLOOD_WAR, TROLL, NOBLE, NORMAL, SMART, FRIEND }
+public enum RANK { BLOOD_WALL, DODGE, MOVE, RUN_AWAY }
+public enum WARRINGLEVEL { SAFE, ATTACK, WARRING }
 public class Enemy : MonoBehaviour
 {
 
-   public enum WallCollison {TOP,DOWN,LEFT,RIGHT}
-    public enum Type_Status { ATTACK, DODGE, MOVE, RUN_AWAY }
-    public enum Type_AI { BLOOD_WAR,TROLL, NOBLE, NORMAL,SMART,FRIEND }
-    public enum RANK { BLOOD_WALL, DODGE, MOVE, RUN_AWAY }
-    public enum WARRINGLEVEL {SAFE,ATTACK, WARRING }
+    
+
     public AiStatus Status;
     public Text text;
     public ForceMode ForceModeWhenMove;
     public ForceMode ForceModeWhenInteraction;
     public ForceMode ForceModeWhenBrake;
+    public Type_Status status = Type_Status.MOVE;
     public GameObject Ground = null;
     public Rigidbody body;
     public Player Target;
@@ -32,8 +34,9 @@ public class Enemy : MonoBehaviour
     public float ForceIntereact;
     public float CheckGround = 1;
     public bool isGround = false;
-    
-    
+    public float Range;
+
+
     //Local Variable
     public List<Transform> ListRay = new List<Transform>();
 
@@ -60,10 +63,10 @@ public class Enemy : MonoBehaviour
     public float maxTime = 4;
     public float minTime = 2;
     public bool isMoving = false;
-
+    public bool isLoopDirect = false;
     // RunAway
 
-    public Player playerRunAway;
+    public Player[] playerRunAway;
     public Vector3[] directX8 = { new Vector3(0, 0, 1) ,new Vector3(0.5f,0,0.5f),new Vector3(1,0,0),new Vector3(0.5f,0,-0.5f),new Vector3(-0.5f,0,-0.5f),new Vector3(-0.5f,0,0.5f),new Vector3(-1,0,0),new Vector3(0,0,-1)};
     public Vector3[] directx4 = { new Vector3(0, 0, 1), new Vector3(1, 0, 0), new Vector3(-1, 0, 0), new Vector3(0, 0, -1) };
 
@@ -71,6 +74,7 @@ public class Enemy : MonoBehaviour
     //Local Variable
 
     public float Distance = 50;
+    bool Stop = false;
     // Start is called before the first frame update
     void Start()
     {
@@ -83,17 +87,12 @@ public class Enemy : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        //  UI
-
-
-
-        StartCoroutine(LetRun());
-
+        //  CheckGround
         if (Input.GetKeyDown(KeyCode.B))
         {
-           
 
 
+            Debug.Log(gameObject.name + "  " + GetEnemyInRadius(10, transform.position, body.velocity.normalized));
 
         }
 
@@ -121,66 +120,31 @@ public class Enemy : MonoBehaviour
         }
 
 
+        /// Move
+
         if (isGround)
         {
-           
-            if (!isMoveBack)
+            switch (status)
             {
-             // Try it   
+                case Type_Status.MOVE:
+                 
+                    Move();
+                    break;
+                case Type_Status.ATTACK:
+                    Attack();
+                    break;
+                case Type_Status.DODGE:
+                    StartCoroutine(Dodge());
+                   
+                    break;
+                case Type_Status.RUN_AWAY:
 
-
-
-
-
-                if (Target != null)
-                {
-
-
-
-
-                    if (!isMoveLimit)
-                    {
-                        Direct = new Vector3(Target.transform.position.x, 0, Target.transform.position.z) - new Vector3(transform.position.x, 0, transform.position.z);
-
-
-
-                        
-                  
-                        if (Vector3.Magnitude(body.velocity) <= MaxVelocity)
-                        {
-                         
-                            body.AddForce(DirectMove * Speed,ForceModeWhenMove);
-
-                        }
-                        else
-                        {
-                      
-                            body.AddForce(DirectMove , ForceMode.VelocityChange);
-                        }
-                        Force = Vector3.Magnitude(body.velocity);
-                        ICanNotDead();
-
-
-                    }
-
-                    else
-                    {
-                        ICanNotDead();
-                        if (Vector3.Magnitude(body.velocity) < MassLimit)
-                        {
-                            isMoveLimit = false;
-                        }
-                    }
-
-                }
+                    break;
             }
-            else
-            {
-                if (Vector3.Magnitude(body.velocity) < Mass)
-                {
-                    isMoveBack = false;
-                }
-            }
+
+            MoveFollowDirect();
+
+
 
 
 
@@ -189,8 +153,67 @@ public class Enemy : MonoBehaviour
         {
             body.constraints = RigidbodyConstraints.None;
         }
+       
+     
+
+       
+
+        //InforBall
+
+        Force = Vector3.Magnitude(body.velocity);
     }
-    bool Stop = false;
+
+
+    private void MoveFollowDirect()
+    {
+        // int direcy = (int)ScoreOfDirectx8();
+
+        if (!isMoveBack)
+        {
+            // Try it   
+
+
+            if (!isMoveLimit)
+            {
+
+
+                if (Vector3.Magnitude(body.velocity) <= MaxVelocity)
+                {
+
+                    body.AddForce(DirectMove * Speed, ForceModeWhenMove);
+
+                }
+                else
+                {
+
+                    body.AddForce(DirectMove, ForceMode.VelocityChange);
+                }
+
+                ICanNotDead();
+
+            }
+
+            else
+            {
+                ICanNotDead();
+                if (Vector3.Magnitude(body.velocity) < MassLimit)
+                {
+                    isMoveLimit = false;
+                }
+            }
+
+
+        }
+        else
+        {
+            if (Vector3.Magnitude(body.velocity) < Mass)
+            {
+                isMoveBack = false;
+            }
+        }
+    }
+
+
     private void FixedUpdate()
     {
        
@@ -203,17 +226,7 @@ public class Enemy : MonoBehaviour
        
 
            RaycastHit[] hit = null;
-        int count = CountEnemyFoward();
-        if (count > 1)
-        {
-         //   Debug.Log(count +""+gameObject.name);
-        }
        
-        for(int i = 0; i < ListRay.Count; i++)
-        {
-            Ray ray_check = new Ray(ListRay[i].transform.position, body.velocity.normalized);
-          
-        }
        
         hit = Physics.RaycastAll(new Ray(transform.position,body.velocity.normalized), distanceRay);
 
@@ -230,7 +243,8 @@ public class Enemy : MonoBehaviour
 
                 body.AddForce(Direct.normalized * Mathf.Clamp(Vector3.Magnitude(body.velocity), 20, 70) * Brake, ForceModeWhenBrake);
                 //     Debug.Log("Coll" + (hit[i].collider.gameObject.name));
-                MoveRandom();
+
+                isMoving = false;
                 StartCoroutine(TurnoffLimit(0.75f));
 
 
@@ -276,21 +290,7 @@ public class Enemy : MonoBehaviour
        
                
              
-            /*
-            else
-            {
-
-                 Debug.Log("Force Enemy");
-                ForceBack = (Force - ForcePlayer);
-                //     Debug.Log(Direct.normalized * ForceBack * Bonnd);
-                body.AddForce(-Direct.normalized * ForceBack*BoundPlayer/Weight,ForceMode.VelocityChange);
-                player.GetComponent<RollBall>().GoBack(ForceBack * Bonnd/5, Direct);
-
-
-            }
-
-        */
-          
+     
 
 
 
@@ -368,70 +368,109 @@ public class Enemy : MonoBehaviour
     //
 
 
-    public float Range;
+    
 
 
 
-
-    public void RangeRadio()
-    {
-         
-    }
-
-    public GameObject getEnemyNearts()
-    {
-
-
-        return null;
-
-
-    }
    
 
-    public void MoveAround()
+  
+  
+   
+    public IEnumerator Dodge()
     {
 
-    }
-    public void RunAway()
-    {
-       
-    }
-    public void Dodge()
-    {
-        playerRunAway = GamePlayerCtrl.Instance.getEneMyNearst(GetComponent<Player>());
+
+
+    
+        List<Vector3> direct = new List<Vector3>() ;
+        float[] Score;
+       for(int i = 0; i < playerRunAway.Length; i++)
+        {
+          
+
+                for(int j = 0; j < directX8.Length; j++)
+                {
+                    if (!IsCollWithPlayer(directX8[j], playerRunAway[i]))
+                    {
+                        if (!direct.Contains(direct[j]))
+                        {
+                            direct.Add(directX8[j]);
+                        }
+                    }
+                    else
+                    {
+                        if (direct.Contains(direct[j]))
+                        {
+                            direct.Remove(directX8[j]);
+
+                        }
+                    }
+                 }
+            
+
+            yield return new WaitForSeconds(0);
+        }
+        Score = new float[direct.Count];
+      
+       for(int i = 0; i < direct.Count; i++)
+        {
+            Score[i] = DistanceFromWall(direct[i]);
+
+
+        }
+        int index = getIndexMax(Score);
+
+        DirectMove = direct[index];
         
 
+       
+
     }
+
+    public bool IsCollWithPlayer(Vector3 direct,Player player)
+    {
+       for(int i = 0; i < ListRay.Count; i++) 
+        
+        {
+
+            RaycastHit[] hits = Physics.RaycastAll(ListRay[i].transform.position, direct, Mathf.Infinity, MaskPlayer);
+            for(int j = 0; j < hits.Length; j++)
+            {
+                if (hits[j].collider.gameObject == player.gameObject)
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public void Warring()
     {
 
     }
-    public void MoveRandom(Vector3 direct)
-    {
-        Direct = direct;
-    }
-    public void MovePath(Vector3[] ListDirect, float time)
-    {
-        
-    }
-    IEnumerator StartMovePath(Vector3[] ListDirect, float[] time)
-    {
-        int count = ListDirect.Length;
-        int i = 0;
-        while (i < count)
-        {
+   
+   
 
-            MoveRandom(ListDirect[i]);
-            yield return new WaitForSeconds(time[i]);
-            i++;
+    public void Attack()
+    {
+
+        if (Target != null)
+        {
+            DirectMove = new Vector3(Target.transform.position.x, 0, Target.transform.position.z) - new Vector3(transform.position.x, 0, transform.position.z).normalized;
 
         }
 
+
+
+
     }
-    public void Attack(Player player)
-    {
-        Target = player;
-    }
+  
+    // DDOGE :::::::::::::
+
+   
+
     public void DistanceFromLimit()
     {
 
@@ -458,7 +497,7 @@ public class Enemy : MonoBehaviour
                         {
                           
                             distance = Vector3.Distance(transform.position, hits[j].point);
-                            Debug.Log(hits[j].collider.gameObject.name + "  TARGET " + distance);
+                     //       Debug.Log(hits[j].collider.gameObject.name + "  TARGET " + distance);
                         }
                     }
                 }
@@ -494,9 +533,10 @@ public class Enemy : MonoBehaviour
     }
     
     
-
-    public float ScoreOfDirectx8()
+   
+    private int ScoreOfDirectx8()
     {
+        int index = 0;
         /*
         for(int i = 0; i < directX8.Length; i++)
         {
@@ -515,18 +555,15 @@ public class Enemy : MonoBehaviour
             score[i] = DistanceFromWall(directX8[i]);
 
         }
-        float index = getValueMax(score);
 
-        for(int i = 0; i < directX8.Length; i++)
-        {
-            Ray ray = new Ray(transform.position,directX8[i]);
-            RaycastHit[] hits = Physics.RaycastAll(ray,distanceRay,WallLayer);
-            for(int j = 0; j < hits.Length; j++)
-            {
-              
-            }
-          
-        }
+        float[] CopyScore;
+        float[] ScoreGood = GetArrayMax(score, 4);
+        int r = Random.Range(0, 4);
+        Debug.Log(r);
+        index =  getIndex(score, ScoreGood[r]);
+        
+
+       
         return index;
        
     
@@ -534,7 +571,7 @@ public class Enemy : MonoBehaviour
     }
     
 
-    public int getCountEnemyInDirect(float time,Vector3 direct)
+   private int getCountEnemyInDirect(float time,Vector3 direct)
     {
         int count = 0;
         for(int i = 0; i < ListRay.Count; i++)
@@ -546,49 +583,143 @@ public class Enemy : MonoBehaviour
         }
         return count;
     }
+   
+    
 
-    public void MoveRandom()
-    {
-        int direcy = (int)ScoreOfDirectx8();
-        DirectMove = directX8[direcy];
-    }
-    public IEnumerator LetRun()
+
+    private IEnumerator RandomDirect()
     {
         if (!isMoving)
         {
             isMoving = true;
             yield return new WaitForSeconds(Random.Range(minTime, maxTime));
             isMoving = false;
-            MoveRandom();
+            int direct = ScoreOfDirectx8();
+            DirectMove = directX8[direct];
+
+
+        }
+
+
+    }
+    public void Move()
+    {
+        StartCoroutine(RandomDirect());
+
+        if (GetEnemyInRadius(Radius, transform.position, transform.up)!=0)
+        {
+            Target = GetTargert(Radius);
+          
         }
        
+    
        
     }
-
-    public void Dodge(Vector3 directAttack)
-    {
-
-    }
+   
     // Move Random
-    public void ScoreTarget()
+  
+    private int GetEnemyInRadius(float radius, Vector3 pos, Vector3 direct)
     {
+        int number = 0;
+        Ray ray = new Ray(pos, direct);
+        RaycastHit[] hits = Physics.SphereCastAll(ray,radius,0,MaskPlayer);
+        number = hits.Length;
         
-
-            float[] ScoreTarget = GamePlayerCtrl.Instance.getScoreTarget(GetComponent<Player>());
-        
-      
-      
+        string s ="";
+        for(int i = 0; i < hits.Length; i++)
+        {
+           if( hits[i].collider.gameObject != this.gameObject)
+            {
+                s += "  " + hits[i].collider.gameObject.name;
+            }
+          
+        }
+        number--;
+      //  Debug.Log(gameObject.name+ " "+s);
+        return number;
     }
+    private int GetEnemyInRadius(float radius, Vector3 pos, Vector3 direct, out Player[] player)
+    {
+        int number = 0;
 
-    
+        Ray ray = new Ray(pos, direct);
+        RaycastHit[] hits = Physics.SphereCastAll(ray, radius, 0, MaskPlayer);
+        number = hits.Length;
+        number--;
+        int index = 0;
+        if (number > 0)
+        {
+            player = new Player[number];
+            for (int i = 0; i < hits.Length; i++)
+            {
+                if (hits[i].collider.gameObject != this.gameObject)
+                {
+                    player[index] = hits[i].collider.gameObject.GetComponent<Player>();
+                    index++;
+                }
+
+            }
+            return number;
+        }
+        else
+        {
+            player = null;
+            return 0;
+        }
+
+     
+     
+
+    }
+    /// <summary>
+    /// ///////////  
+    ///    Caculate Score of Enemy
+    /// </summary>
+    /// 
+    public Player GetTargert(float radius)
+    {
+        Player[] player;
+        float[] Score = new float[GetEnemyInRadius(radius,transform.position,body.velocity.normalized,out player)];
+        if (player != null)
+        {
+            for (int i = 0; i < player.Length; i++)
+            {
+                float Magtidue = player[i].GetComponent<Enemy>().Magtidue();
+                float DistanceNearLimit = player[i].GetComponent<Enemy>().DistanceFromLimitNeart();
+                float DistanceToItsSelf = Vector3.Distance(transform.position, player[i].GetComponent<Enemy>().transform.position);
+                Score[i] = (DistanceToItsSelf - DistanceNearLimit) / Magtidue;
+
+            }
+            int indexMax = getIndexMax(Score);
+            return player[indexMax];
+        }
+        else
+        {
+            return null;
+        }
+        
+
+       
+      
+
+
+
+    }
+   
+    public Vector3 getDirect()
+    {
+     return   body.velocity.normalized;
+    }
+    public Player[] player;
     private void OnDrawGizmos()
     {
         if (Target != null)
         {
             Gizmos.DrawLine(transform.position, Target.transform.position);
         }
-        ScoreOfDirectx8();
-        Gizmos.DrawWireSphere(transform.position, Radius+Range);
+       
+        Gizmos.DrawWireSphere(transform.position, Radius);
+      //  Debug.Log(gameObject.name + " " + GetEnemyInRadius(Radius, transform.position, transform.up,out player));
         Gizmos.color = Color.blue;
        for (int i = 0; i < ListRay.Count; i++)
         {
@@ -645,6 +776,10 @@ public class Enemy : MonoBehaviour
        
     }
 
+  
+
+
+    
     public float getValueMax(float[] score)
     {
         float index = 0;
@@ -657,7 +792,7 @@ public class Enemy : MonoBehaviour
                 max = score[i];
             }
         }
-        return index;
+        return max;
     }
 
     public float getValueMin(float[] score)
@@ -672,13 +807,93 @@ public class Enemy : MonoBehaviour
                 min = score[i];
             }
         }
+        return min;
+    }
+   
+    public int getIndexMax(float[] score)
+    {
+        int index = 0;
+        float max = 0;
+        for (int i = 0; i < score.Length; i++)
+        {
+            if (score[i] > max)
+            {
+                index = i;
+                max = score[i];
+            }
+        }
         return index;
     }
+    public int getIndexMin(float[] score)
+    {
+        int index = 0;
+        float min = Mathf.Infinity;
+        for (int i = 0; i < score.Length; i++)
+        {
+            if (score[i] < min)
+            {
+                index = i;
+                min = score[i];
+            }
+        }
+        return index;
+    }
+    public  float[] GetArrayMax(float[] Score ,int number)
+    {
+        string s = "";
+        string s1 = "";
 
-  
+        List<float> Scores = new List<float>();
+        List<float> ScoresMax = new List<float>();
+        for (int i=0;i< Score.Length; i++)
+        {
+            Scores.Add(Score[i]);
+            s += " " + Score[i];
+        }
 
-   
-    
+        for(int i = 0; i < number; i++)
+        {
+            float max = getValueMax(Score);
+            ScoresMax.Add(max);
+            Score = RemoveArray(max, Score);
+            s1 += " " + max;
+        
+        }
+      
+        return ScoresMax.ToArray();
+    }
+    public  void GetArrayMax(int number)
+    {
+
+    }
+
+    public float[] RemoveArray(float value,float[] Score)
+    {
+        int number = Score.Length;
+        List<float> list = new List<float>();
+        for(int i = 0; i < Score.Length; i++)
+        {
+            if(Score[i] != value)
+            {
+                list.Add(Score[i]);
+            }
+        }
+        return list.ToArray();
+    }
+
+    public int getIndex(float[] Score,float value)
+    {
+        int index = 0;
+        for(int i = 0; i < Score.Length; i++)
+        {
+            if(value == Score[i])
+            {
+                return index;
+            }
+        }
+        return 0;
+    }
+
 }
 
 

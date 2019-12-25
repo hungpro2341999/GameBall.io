@@ -13,7 +13,7 @@ public class VisibleInforBall : MonoBehaviour
           var a =   Instantiate(InforBall,transform);
             a.GetComponent<GetInfor>().player = GamePlayerCtrl.Instance.player[i];
         }
-        Debug.Log(GamePlayerCtrl.Instance.CountPlayer());
+ //       Debug.Log(GamePlayerCtrl.Instance.CountPlayer());
     }
 
     // Update is called once per frame

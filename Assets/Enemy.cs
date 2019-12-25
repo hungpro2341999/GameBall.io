@@ -7,18 +7,23 @@ public enum WallCollison { TOP, DOWN, LEFT, RIGHT }
 public enum Type_Status { ATTACK, DODGE, MOVE, RUN_AWAY }
 public enum Type_AI { BLOOD_WAR, TROLL, NOBLE, NORMAL, SMART, FRIEND }
 public enum RANK { BLOOD_WALL, DODGE, MOVE, RUN_AWAY }
-public enum WARRINGLEVEL { SAFE, ATTACK, WARRING }
+public enum WARRING_LIMIT {LV1,LV2,LV3,LV4,LV5}
+public enum WARRING_ENEMY {LV1,LV2,LV3,LV4 }
+public enum POWER {LV1,LV2,LV3,LV4,LV5}
 public class Enemy : MonoBehaviour
 {
 
     
-
+   
     public AiStatus Status;
     public Text text;
     public ForceMode ForceModeWhenMove;
     public ForceMode ForceModeWhenInteraction;
     public ForceMode ForceModeWhenBrake;
     public Type_Status status = Type_Status.MOVE;
+    public WARRING_LIMIT type_warring;
+    public POWER type_power;
+    public WARRING_ENEMY type_warring_enemy;
     public GameObject Ground = null;
     public Rigidbody body;
     public Player Target;
@@ -35,7 +40,7 @@ public class Enemy : MonoBehaviour
     public float CheckGround = 1;
     public bool isGround = false;
     public float Range;
-
+   
 
     //Local Variable
     public List<Transform> ListRay = new List<Transform>();
@@ -43,6 +48,7 @@ public class Enemy : MonoBehaviour
     float initPoint;
 
     //Info Strenght Ball
+    public float weight;
     public float distanceRay;
     public  float Brake = 2;
     public float Drag = 2;
@@ -57,13 +63,23 @@ public class Enemy : MonoBehaviour
     public float Weight = 1;
 
     //AI
-    
+    public bool isDodge = false;
     public float ForceIntertion;
     public Vector3 DirectMove = Vector3.zero;
     public float maxTime = 4;
     public float minTime = 2;
     public bool isMoving = false;
     public bool isLoopDirect = false;
+    public int index_Enemy = 0;
+    public int index_Limit = 0;
+    public int index_Power = 0;
+    public int index_Skill = 0;
+    public int index_scoward = 0;
+    public float indexPower;
+
+    public int index_Blood_War = 0;
+    public int index_Dodge = 0;
+    
     // RunAway
 
     public Player[] playerRunAway;
@@ -98,6 +114,7 @@ public class Enemy : MonoBehaviour
 
         if (Physics.Raycast(new Ray(transform.position, -Vector3.up), CheckGround))
         {
+            body.constraints = RigidbodyConstraints.FreezePositionY;
             isGround = true;
         }
         else
@@ -124,23 +141,7 @@ public class Enemy : MonoBehaviour
 
         if (isGround)
         {
-            switch (status)
-            {
-                case Type_Status.MOVE:
-                 
-                    Move();
-                    break;
-                case Type_Status.ATTACK:
-                    Attack();
-                    break;
-                case Type_Status.DODGE:
-                    StartCoroutine(Dodge());
-                   
-                    break;
-                case Type_Status.RUN_AWAY:
-
-                    break;
-            }
+           
 
             MoveFollowDirect();
 
@@ -179,14 +180,31 @@ public class Enemy : MonoBehaviour
 
                 if (Vector3.Magnitude(body.velocity) <= MaxVelocity)
                 {
+                    switch (status)
+                    {
+                        case Type_Status.MOVE:
 
+                            Move();
+                            break;
+                        case Type_Status.ATTACK:
+                            Attack();
+                            break;
+                        case Type_Status.DODGE:
+                            StartCoroutine(Start_Dodge());
+
+                            break;
+                        case Type_Status.RUN_AWAY:
+
+                            break;
+                    }
                     body.AddForce(DirectMove * Speed, ForceModeWhenMove);
-
+                 //   Debug.Log("Forece");
                 }
                 else
                 {
 
-                    body.AddForce(DirectMove, ForceMode.VelocityChange);
+               
+                 //   Debug.Log("Forece_Limit");
                 }
 
                 ICanNotDead();
@@ -195,11 +213,7 @@ public class Enemy : MonoBehaviour
 
             else
             {
-                ICanNotDead();
-                if (Vector3.Magnitude(body.velocity) < MassLimit)
-                {
-                    isMoveLimit = false;
-                }
+                
             }
 
 
@@ -237,20 +251,30 @@ public class Enemy : MonoBehaviour
 
                 if (hit[i].collider.gameObject.layer == 12)
                 {
-               
+                Debug.Log("COll");
 
                 body.velocity = body.velocity / Drag;
 
-                body.AddForce(Direct.normalized * Mathf.Clamp(Vector3.Magnitude(body.velocity), 20, 70) * Brake, ForceModeWhenBrake);
-                //     Debug.Log("Coll" + (hit[i].collider.gameObject.name));
+            
+                  //   Debug.Log("Coll" + (hit[i].collider.gameObject.name));
+             
+                StopAllCoroutines();
+                if (status == Type_Status.MOVE)
+                {
 
-                isMoving = false;
-                StartCoroutine(TurnoffLimit(0.75f));
+                    isMoving = false;
+                    StartCoroutine(RandomDirect(directX8));
 
+                    //   Debug.Log("Change : ");
 
-                isMoveLimit = true;
-
-
+                }
+                else if(status == Type_Status.DODGE)
+                {
+                    isDodge = false;
+                    StartCoroutine(Start_Dodge());
+                   
+                }
+               
                 break;
             }
           
@@ -264,20 +288,23 @@ public class Enemy : MonoBehaviour
        
        
         float ForcePlayer = player.GetComponent<Enemy>().Force;
+        float weightPlayer = player.GetComponent<Enemy>().weight;
         float BoundPlayer = player.GetComponent<Enemy>().Bound;
         Rigidbody body_1 = player.GetComponent<Enemy>().body;
-        float ForceBack = ForcePlayer+Force;
+        float ForceBack = ForcePlayer+Force/4;
         float ForceIntertion_1 = 0;
 
         if (ForcePlayer < Force)
         {
-            Debug.Log("Force Player");
+            //    Debug.Log("Force Player");
+         
             ForceIntertion = ForceBack * Bound;
             ForceIntertion_1 = ForceBack * BoundPlayer;
-            Debug.Log(ForceIntertion);
+            //      Debug.Log(ForceIntertion);
+            isMoveBack = true;
+            AddForce(-DirectMove.normalized * ForceIntertion_1/weight, ForceModeWhenInteraction,ForceIntertion_1);
             
-            body.AddForce(-DirectMove.normalized * ForceIntertion, ForceModeWhenInteraction);
-            body_1.AddForce(DirectMove * ForceIntertion, ForceModeWhenInteraction);
+            player.GetComponent<Enemy>().AddForce(DirectMove.normalized * ForceIntertion/weightPlayer, ForceModeWhenInteraction, ForceIntertion);
 
         }
        
@@ -289,9 +316,22 @@ public class Enemy : MonoBehaviour
 
         }
 
+    public void AddForce(Vector3 Force,ForceMode Force_Mode,float ForceInteraction)
+    {
+        isMoveBack = true;
+
+        this.ForceIntertion = ForceInteraction; 
+            body.AddForce(Force, Force_Mode);
+      
+     
+           
+        
+      
+    }
+
     private void OnCollisionEnter(Collision collision)
     {
-        Debug.Log("Coll");
+       // Debug.Log("Coll");
         if (collision.gameObject.layer == 10)
             MoveBack(collision.gameObject);
     }
@@ -367,22 +407,40 @@ public class Enemy : MonoBehaviour
 
     //
 
-
-    
-
-
-
-   
-
-  
-  
-   
-    public IEnumerator Dodge()
+        public IEnumerator Start_Dodge()
     {
+        if (!isDodge)
+        {
+            Dodge();
+           
+           
+            StartCoroutine(Restore_Dodge(Random.Range(minTime, maxTime)));
+            yield return new WaitForSeconds(0);
+
+
+        }
+
+
+    }
+
+    public IEnumerator Restore_Dodge(float time)
+    {
+        isDodge = true;
+        yield return new WaitForSeconds(time);
+        isDodge = false;
+    }
 
 
 
-    
+
+
+
+
+
+
+    public void Dodge()
+    {
+     
         List<Vector3> direct = new List<Vector3>() ;
         float[] Score;
        for(int i = 0; i < playerRunAway.Length; i++)
@@ -393,37 +451,29 @@ public class Enemy : MonoBehaviour
                 {
                     if (!IsCollWithPlayer(directX8[j], playerRunAway[i]))
                     {
-                        if (!direct.Contains(direct[j]))
+                        if (!direct.Contains(directX8[j]))
                         {
                             direct.Add(directX8[j]);
+              //          Debug.Log("ADD");
                         }
                     }
-                    else
-                    {
-                        if (direct.Contains(direct[j]))
-                        {
-                            direct.Remove(directX8[j]);
-
-                        }
-                    }
+                  
                  }
             
 
           
         }
+       
+
+        
         Score = new float[direct.Count];
-      
-       for(int i = 0; i < direct.Count; i++)
-        {
-            Score[i] = DistanceFromWall(direct[i]);
+      //    Debug.Log(direct.Count + "  "+directX8.Length);
 
-
-        }
-        int index = getIndexMax(Score);
-
+        int index = ScoreOfDirect(direct.ToArray());
+        
         DirectMove = direct[index];
-
-        yield return new WaitForSeconds(0);
+        Debug.Log(DirectMove);
+       
 
 
     }
@@ -442,27 +492,69 @@ public class Enemy : MonoBehaviour
                     return true;
                 }
             }
+            RaycastHit[] hits1 = Physics.RaycastAll(ListRay[i].transform.position, -direct, Mathf.Infinity, MaskPlayer);
+            for (int j = 0; j < hits1.Length; j++)
+            {
+                if (hits1[j].collider.gameObject == player.gameObject)
+                {
+                    return true;
+                }
+            }
         }
         return false;
     }
 
-    public void Warring()
+    public void Process_Status()
     {
-
+        int indexBall = index_Limit + index_Enemy;
+        int isDodge = index_Blood_War - index_Dodge;
+        if (indexBall <= index_Blood_War)
+        {
+            status = Type_Status.ATTACK;
+            if(isDodge<=index_Dodge && index_Dodge <= index_Blood_War)
+            {
+                status = Type_Status.DODGE;
+            }
+        }
+        else
+        {
+            status = Type_Status.RUN_AWAY;
+        }
+        
     }
    
    
 
     public void Attack()
     {
-
         if (Target != null)
         {
-            DirectMove = (new Vector3(Target.transform.position.x, 0, Target.transform.position.z) - new Vector3(transform.position.x, 0, transform.position.z)).normalized;
+
+
+            if (!Target.GetComponent<Enemy>().isGround)
+            {
+                Target = null;
+                status = Type_Status.MOVE;
+                return;
+            }
+            else
+            {
+                float ForceTarget = Target.GetComponent<Enemy>().Force;
+
+                float AttackPower = ((Force / DistanceFromLimitNeart()) * Mass);
+
+
+
+                DirectMove = (new Vector3(Target.transform.position.x, 0, Target.transform.position.z) - new Vector3(transform.position.x, 0, transform.position.z)).normalized;
+
+            }
+        }
+        else
+        {
+            status = Type_Status.MOVE;
+
 
         }
-
-
 
 
     }
@@ -534,7 +626,7 @@ public class Enemy : MonoBehaviour
     
     
    
-    private int ScoreOfDirectx8()
+    private int ScoreOfDirect(Vector3[] directs)
     {
         string s1 = "";
         string s2 = "";
@@ -551,18 +643,18 @@ public class Enemy : MonoBehaviour
         }
         */
       
-        float[] score = new float[8];
-        float[] DistanceToWall = new float[8];
-        float[] Time = new float[8];
-        for (int i = 0; i < directX8.Length; i++)
+        float[] score = new float[directs.Length];
+        float[] DistanceToWall = new float[directs.Length];
+        float[] Time = new float[directs.Length];
+        for (int i = 0; i < directs.Length; i++)
         {
-            score[i] = DistanceFromWall(directX8[i]);
+            score[i] = DistanceFromWall(directs[i]);
 
         }
 
       
-        float[] ScoreGood = GetArrayMax(score, 4);
-        int r = Random.Range(0, 4);
+        float[] ScoreGood = GetArrayMax(score, directs.Length/2);
+        int r = Random.Range(0, directs.Length / 2);
      
         index =  getIndex(score, ScoreGood[r]);
         
@@ -570,17 +662,63 @@ public class Enemy : MonoBehaviour
         {
             s1 += "  " + score[i];
         }
-       // Debug.Log(s1);
-       // Debug.Log(gameObject.name +" "+ ScoreGood[r] + "  " + index);
+      //Debug.Log(s1);
+     // Debug.Log(gameObject.name +" "+ ScoreGood[r] + "  " + index);
        
         return index;
        
     
 
     }
-    
+    private int ScoreOfDirect(Vector3[] directs,float power)
+    {
+        string s1 = "";
+        string s2 = "";
 
-   private int getCountEnemyInDirect(float time,Vector3 direct)
+        int index = 0;
+        /*
+        for(int i = 0; i < directX8.Length; i++)
+        {
+            Ray ray = new Ray(transform.position, directX8[i]);
+          RaycastHit[] hits =   Physics.SphereCastAll(ray,Radius,Range,MaskPlayer);
+            
+            Debug.Log(gameObject.name + " " + directX8[i] + "  " + hits.Length);
+              
+        }
+        */
+
+        float[] score = new float[directs.Length];
+        float[] DistanceToWall = new float[directs.Length];
+        float[] Time = new float[directs.Length];
+        for (int i = 0; i < directs.Length; i++)
+        {
+            score[i] = DistanceFromWall(directs[i]);
+
+        }
+
+
+        float[] ScoreGood = GetArrayMax(score, directs.Length / 2);
+        int r = Random.Range(0, directs.Length / 4);
+
+        index = getIndex(score, ScoreGood[r]);
+
+        for (int i = 0; i < score.Length; i++)
+        {
+            s1 += "  " + score[i];
+        }
+        Debug.Log(s1);
+        Debug.Log(gameObject.name + " " + ScoreGood[r] + "  " + index);
+
+        return index;
+
+
+
+    }
+
+
+
+
+    private int getCountEnemyInDirect(float time,Vector3 direct)
     {
         int count = 0;
         for(int i = 0; i < ListRay.Count; i++)
@@ -596,27 +734,38 @@ public class Enemy : MonoBehaviour
     
 
 
-    private IEnumerator RandomDirect()
+    private IEnumerator RandomDirect(Vector3[] Direct)
     {
         if (!isMoving)
         {
+
             isMoving = true;
-            yield return new WaitForSeconds(Random.Range(minTime, maxTime));
-            isMoving = false;
-            int direct = ScoreOfDirectx8();
-            DirectMove = directX8[direct];
-
-
+            
+            StartCoroutine(Create_Direct(Random.Range(minTime, maxTime)));
+           
+            int direct = ScoreOfDirect(Direct);
+        
+            DirectMove = Direct[direct];
+            Debug.Log(DirectMove);
+            yield return new WaitForSeconds(0);
         }
 
 
     }
+    private IEnumerator Create_Direct(float time)
+    {
+        yield return new WaitForSeconds(time);
+        isMoving = false;
+    }
+
     public void Move()
     {
-        StartCoroutine(RandomDirect());
+        StartCoroutine(RandomDirect(directX8));
 
+        // Is Swapped Attack
         if (GetEnemyInRadius(Radius, transform.position, transform.up)!=0)
         {
+
             Target = GetTargert(Radius);
             status = Type_Status.ATTACK;
           
@@ -721,6 +870,134 @@ public class Enemy : MonoBehaviour
      return   body.velocity.normalized;
     }
     public Player[] player;
+
+
+
+   
+
+    public void Warring_Enemy()
+    {
+        index_Enemy = 0;
+       int  level_power = 0;
+        Player[] players = null;
+
+        GetEnemyInRadius(Radius, transform.position, transform.up, out players);
+        for(int i = 0; i < player.Length; i++)
+        {
+            Vector3 direct = player[i].GetComponent<Enemy>().DirectMove;
+            if (player[i].GetComponent<Enemy>().IsCollWithPlayer(direct, GetComponent<Player>()))
+            {
+                level_power++;
+            }
+        }
+        if (level_power == 0)
+        {
+            index_Enemy = 1;
+        }
+        else if( level_power>0 && level_power <2)
+        {
+            index_Enemy = 2;
+        }
+        else if(level_power>=2 && level_power <3)
+        {
+            index_Enemy = 3;
+        }
+        else if (level_power >= 3)
+        {
+            index_Enemy = 4;
+        }
+
+
+    }
+    public void Run_Away()
+    {
+
+    }
+
+
+   
+    public void Power()
+    {
+         index_Power = 0;
+        float percent = MaxVelocity / 5;
+        for (int i = 0; i < 5; i++)
+        {
+            if (DistanceFromLimitNeart() > i * percent && DistanceFromLimitNeart() < (i + 1) * percent)
+            {
+                index_Power = i++;
+            }
+
+        }
+        Swapped_To_Enmu_Power((int)index_Power);
+    }
+   
+
+    public void Warring_Limit()
+    {
+        index_Limit = 0;
+        float Percent = 10;
+        for(int i = 0; i < 5; i++)
+        {
+            if(DistanceFromLimitNeart()>i*Percent && DistanceFromLimitNeart() < (i + 1) * Percent)
+            {
+                index_Limit = i++;         
+            }
+
+        }
+        Swapped_To_Enmu_Limit_Level((int)index_Limit);
+    }
+
+    public void Swapped_To_Enmu_Power(int level)
+    {
+        switch (level)
+        {
+            case 1:
+                type_power = POWER.LV1;
+                break;
+            case 2:
+                type_power = POWER.LV2;
+                break;
+            case 3:
+                type_power = POWER.LV3;
+                break;
+            case 4:
+                type_power = POWER.LV4;
+                break;
+            case 5:
+                type_power = POWER.LV5;
+                break;
+
+        }
+
+
+    }
+
+
+    public void Swapped_To_Enmu_Limit_Level(int level)
+    {
+        switch (level)
+        {
+            case 1:
+                type_warring = WARRING_LIMIT.LV1;
+                break;
+            case 2:
+                type_warring = WARRING_LIMIT.LV2;
+                break;
+            case 3:
+                type_warring = WARRING_LIMIT.LV3;
+                break;
+            case 4:
+                type_warring = WARRING_LIMIT.LV4;
+                break;
+            case 5:
+                type_warring = WARRING_LIMIT.LV5;
+                break;
+
+        }
+
+
+    }
+
     private void OnDrawGizmos()
     {
         if (Target != null)
@@ -785,11 +1062,11 @@ public class Enemy : MonoBehaviour
 
        
     }
-
-  
-
-
     
+
+
+
+
     public float getValueMax(float[] score)
     {
         float index = 0;
@@ -875,6 +1152,8 @@ public class Enemy : MonoBehaviour
       
         return ScoresMax.ToArray();
     }
+  
+
     public  void GetArrayMax(int number)
     {
 
@@ -912,7 +1191,8 @@ public class Enemy : MonoBehaviour
     }
 
 
-    
+   
+
 }
 
 

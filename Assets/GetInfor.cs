@@ -20,7 +20,7 @@ public class GetInfor : MonoBehaviour
         if (player.GetComponent<Enemy>() != null)
         {
             textVelcocity.text =  "VELOCITY : "+(int)Vector3.Magnitude(player.GetComponent<Enemy>().body.velocity)+ "\n" + " Direct :"+ player.GetComponent<Enemy>().body.velocity.normalized +
-                "\n" + " ForceInteration :" + player.GetComponent<Enemy>().ForceIntertion;
+                "\n" + " ForceInteration :" + player.GetComponent<Enemy>().ForceIntertion + "\n" + " ForceInteration :" + player.GetComponent<Enemy>().status.ToString();
         }
         else
         {

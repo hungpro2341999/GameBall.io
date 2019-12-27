@@ -16,11 +16,13 @@ public class GetInfor : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+   
         transform.position = Camera.main.WorldToScreenPoint(player.transform.position);
         if (player.GetComponent<Enemy>() != null)
         {
+            int status = player.GetComponent<Enemy>().index_Limit + player.GetComponent<Enemy>().index_Enemy;
             textVelcocity.text =  "VELOCITY : "+(int)Vector3.Magnitude(player.GetComponent<Enemy>().body.velocity)+ "\n" + " Direct :"+ player.GetComponent<Enemy>().body.velocity.normalized +
-                "\n" + " ForceInteration :" + player.GetComponent<Enemy>().ForceIntertion + "\n" + " ForceInteration :" + player.GetComponent<Enemy>().status.ToString();
+                "\n" + " ForceInteration :" + player.GetComponent<Enemy>().ForceIntertion + "\n" + " ForceInteration :" + player.GetComponent<Enemy>().status.ToString()+ "\n" + "Index_Status  :" + status;
         }
         else
         {
